@@ -1,0 +1,8 @@
+begin
+var i : int;
+i := 1;
+repeat
+print(i);
+i := i+1 { sem o ; }
+until (i == 10) { sem o ; }
+end.
