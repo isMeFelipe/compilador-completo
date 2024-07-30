@@ -1,8 +1,9 @@
 begin
-var i : int;
-i := 1;
-repeat
-print(i);
-i := i+1 { sem o ; }
-until (i == 10) { sem o ; }
+var num : int;
+input (num);
+if (num % 2 == 0) then
+    print ("num eh par");
+else
+    print ("num eh impar");
+endif
 end.
