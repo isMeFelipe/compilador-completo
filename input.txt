@@ -1,8 +1,11 @@
 begin
-var i : int;
-i := 1;
-repeat
-print(i);
-i := i+1 { sem o ; }
-until (i == 10) { sem o ; }
+var a, b: int;
+a := 40;
+b := 20;
+if (a > b) then
+    print(a)
+    print(a+1)
+else
+    print(b)
+endif
 end.

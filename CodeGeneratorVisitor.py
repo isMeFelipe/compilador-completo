@@ -8,9 +8,16 @@ class SimpAlgToCppListener(SimpAlgListener):
     def __init__(self):
         self.cpp_code = []
         self.indent_level = 0
+        self.label_count = 0
+        self.current_if_label = None
 
     def add_line(self, line):
         self.cpp_code.append('\t' * self.indent_level + line)
+
+    def new_label(self):
+        label = f"L{self.label_count}"
+        self.label_count += 1
+        return label
 
     def enterProgram(self, ctx:SimpAlgParser.ProgramContext):
         self.cpp_code.append("#include <iostream>")
@@ -52,18 +59,25 @@ class SimpAlgToCppListener(SimpAlgListener):
 
     def enterIf_statement(self, ctx:SimpAlgParser.If_statementContext):
         condition = ctx.boolean_expression().getText()
-        self.add_line(f"if ({condition}) {{")
+        print(ctx.getText())
+        self.current_if_label = self.new_label()  # Label for the "else" part
+        self.add_line(f"if (!({condition})) goto {self.current_if_label};")
         self.indent_level += 1
 
     def exitIf_statement(self, ctx:SimpAlgParser.If_statementContext):
         self.indent_level -= 1
         if ctx.ELSE():
-            self.add_line("} else {")
+            self.add_line(f"goto L{self.label_count};")  # Jump to the end of the "if" block
+            self.add_line(f"{self.current_if_label}:")  # Label for the "else" part
             self.indent_level += 1
             self.indent_level -= 1
-        self.add_line("}")
+            self.add_line(f"L{self.label_count}:")  # Label for the end of the "if" block
+        else:
+            self.add_line(f"{self.current_if_label}:")  # Label for the end of the "if" block
 
     def enterRepeat_statement(self, ctx:SimpAlgParser.Repeat_statementContext):
+        self.repeat_start_label = self.new_label()
+        self.add_line(f"{self.repeat_start_label}:")
         self.add_line("do {")
         self.indent_level += 1
 
@@ -73,7 +87,9 @@ class SimpAlgToCppListener(SimpAlgListener):
         self.add_line(f"}} while (!({condition}));")
 
 def main():
-    input_file = sys.argv[1]
+
+#    input_file = sys.argv[1]
+    input_file = './input.txt'
     input_stream = FileStream(input_file)
     lexer = SimpAlgLexer(input_stream)
     stream = CommonTokenStream(lexer)

@@ -12,14 +12,34 @@ end.
 // if e else
 begin
 var a, b: int;
-a:= 10;
-b:= 20;
-if(a>b){
-print(a);
-}else{
-print(b);
-}
+a := 40;
+b := 20;
+if (a > b) then
+    print(a)
+else
+    print(b)
+endif
 end.
+
+
+// Resultado esperado do if else
+#include <iostream>
+using namespace std;
+int main() {
+	int a;
+	int b;
+	a = 40;
+	b = 20;
+	if (!(a>b)) goto L0;
+	cout << a << endl;
+	goto L1;
+	L0:
+	cout << b << endl;
+	L1:
+return 0;
+}
+
+
 
 // Declarar variavel e usar
 begin
