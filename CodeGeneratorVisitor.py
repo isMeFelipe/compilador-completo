@@ -1,9 +1,30 @@
+class VariableAlreadyDeclaredError(Exception):
+    def __init__(self, var_name):
+        self.var_name = var_name
+        super().__init__(f"Variável já declarada: {var_name}")
+
+class SymbolTable:
+    def __init__(self):
+        self.symbols = set()  # Armazena variáveis declaradas
+
+    def add_variable(self, var_name):
+        if self.is_declared(var_name):
+            raise VariableAlreadyDeclaredError(var_name)
+        self.symbols.add(var_name)
+
+    def is_declared(self, var_name):
+        return var_name in self.symbols
+
+    def __str__(self):
+        return ', '.join(self.symbols)
+
 from SimpAlgVisitor import SimpAlgVisitor
 from SimpAlgParser import SimpAlgParser
 
 class CodeGeneratorVisitor(SimpAlgVisitor):
     def __init__(self):
         self.label_count = 0
+        self.symbol_table = SymbolTable()
 
     def get_new_label(self):
         self.label_count += 1
@@ -23,8 +44,23 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return code
 
     def visitDeclaration(self, ctx: SimpAlgParser.DeclarationContext):
-        variables = ", ".join([var.getText() for var in ctx.variable_list().IDENTIFIER()])
-        return f"int {variables};"  # Supondo que o tipo seja sempre int
+        variables = ctx.variable_list().IDENTIFIER()
+        declarations = []
+        
+        for var in variables:
+            var_name = var.getText()
+            try:
+                # Adiciona a variável à tabela de símbolos
+                self.symbol_table.add_variable(var_name)
+                # Adiciona a declaração do tipo à lista de declarações
+                declarations.append(var_name)
+            except VariableAlreadyDeclaredError as e:
+                print(e)  # Exibe a exceção de variável já declarada, pode-se substituir por logging
+
+        # Gera o código de declaração para as variáveis não declaradas
+        if declarations:
+            return f"int {', '.join(declarations)};"
+        return ""
 
     def visitAssignment(self, ctx: SimpAlgParser.AssignmentContext):
         return f"{ctx.IDENTIFIER().getText()} = {self.visit(ctx.expression())};"
@@ -35,18 +71,15 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
             return f"cin >> {values};"
         else:
             return f"cout << {values};"
-        
 
     def visitIf_statement(self, ctx: SimpAlgParser.If_statementContext):
         condition = self.visit(ctx.boolean_expression())
         then_branch = self.visit(ctx.statement_list(0))
         else_branch = self.visit(ctx.statement_list(1)) if ctx.ELSE() else ""
 
-        # Gerar labels
         true_label = self.get_new_label()
         end_label = self.get_new_label()
 
-        # Construir o código
         code = f"if (!({condition})) goto {true_label};\n"
         code += f"{then_branch}\n"
         code += f"goto {end_label};\n"
@@ -56,17 +89,13 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
 
         return code
 
-
     def visitRepeat_statement(self, ctx: SimpAlgParser.Repeat_statementContext):
-        # Gerar labels
         start_label = self.get_new_label()
         end_label = self.get_new_label()
 
-        # Obter o corpo do loop e a condição
         body = self.visit(ctx.statement_list())
         condition = self.visit(ctx.boolean_expression())
 
-        # Construir o código
         code = f"{start_label}:\n"
         code += f"{body}\n"
         code += f"if (({condition})) goto {end_label};\n"
@@ -74,7 +103,6 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         code += f"{end_label}:\n"
 
         return code
-
 
     def visitGoto_statement(self, ctx: SimpAlgParser.Goto_statementContext):
         label = ctx.IDENTIFIER().getText()

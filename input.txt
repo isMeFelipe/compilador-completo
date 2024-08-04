@@ -1,6 +1,7 @@
 begin
 var i : int;
-i := 1;
+var i2 : int;
+i4 := 1;
 repeat
 print(i);
 i := i+1 { sem o ; }
