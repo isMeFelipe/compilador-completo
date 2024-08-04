@@ -16,6 +16,8 @@ READ: 'input';
 WRITE: 'print';
 TRUE: 'true';
 FALSE: 'false';
+GOTO: 'goto';
+LABEL: 'label';
 
 ASSIGN: ':=';
 LPAREN: '(';
@@ -47,6 +49,7 @@ STRING: ( '\'' ( '\\\'' | ~('\\' | '\'') )* '\''
                 );
 NUMBER: DIGIT+ ('.' DIGIT+)?;
 IDENTIFIER: LETTER (LETTER | DIGIT)*;
+LABEL_NAME: IDENTIFIER;
 
 COMMENT: '{' .*? '}' -> skip;
 WS: [ \t\r\n]+ -> skip;
@@ -62,7 +65,9 @@ statement: declaration
          | assignment
          | io_statement
          | if_statement
-         | repeat_statement;
+         | repeat_statement
+         | goto_statement
+         | label_declaration;
 
 declaration: VAR variable_list COLON t_type;
 variable_list: IDENTIFIER (COMMA IDENTIFIER)*;
@@ -78,6 +83,10 @@ value: expression | STRING | TRUE | FALSE;
 if_statement: IF LPAREN boolean_expression RPAREN THEN statement_list (ELSE statement_list)? ENDIF;
 
 repeat_statement: REPEAT statement_list UNTIL LPAREN boolean_expression RPAREN;
+
+goto_statement: GOTO IDENTIFIER;
+
+label_declaration: LABEL LABEL_NAME COLON;
 
 expression: term ((ADD | SUB) term)*;
 term: factor ((MUL | DIV | MOD) factor)*;

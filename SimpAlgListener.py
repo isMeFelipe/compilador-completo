@@ -116,6 +116,24 @@ class SimpAlgListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SimpAlgParser#goto_statement.
+    def enterGoto_statement(self, ctx:SimpAlgParser.Goto_statementContext):
+        pass
+
+    # Exit a parse tree produced by SimpAlgParser#goto_statement.
+    def exitGoto_statement(self, ctx:SimpAlgParser.Goto_statementContext):
+        pass
+
+
+    # Enter a parse tree produced by SimpAlgParser#label_declaration.
+    def enterLabel_declaration(self, ctx:SimpAlgParser.Label_declarationContext):
+        pass
+
+    # Exit a parse tree produced by SimpAlgParser#label_declaration.
+    def exitLabel_declaration(self, ctx:SimpAlgParser.Label_declarationContext):
+        pass
+
+
     # Enter a parse tree produced by SimpAlgParser#expression.
     def enterExpression(self, ctx:SimpAlgParser.ExpressionContext):
         pass

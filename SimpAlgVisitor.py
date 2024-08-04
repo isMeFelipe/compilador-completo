@@ -69,6 +69,16 @@ class SimpAlgVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SimpAlgParser#goto_statement.
+    def visitGoto_statement(self, ctx:SimpAlgParser.Goto_statementContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SimpAlgParser#label_declaration.
+    def visitLabel_declaration(self, ctx:SimpAlgParser.Label_declarationContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SimpAlgParser#expression.
     def visitExpression(self, ctx:SimpAlgParser.ExpressionContext):
         return self.visitChildren(ctx)
