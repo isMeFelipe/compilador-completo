@@ -27,6 +27,21 @@ endif
 end.
 
 
+// if e else
+begin
+var a, b, c, d: int;
+a := 40;
+b := 20;
+c := 20;
+d := 30;
+if (a > b) and (c < d) then
+        print("a maior que b e c menor que d");
+    else
+        print("Falha");
+    endif
+end.
+
+
 // Resultado esperado do if else
 #include <iostream>
 using namespace std;
@@ -65,9 +80,8 @@ b := c + a;
 i := 1;
 repeat
 print(i);
-i := i+1; { sem o ; }
-until (i == 10) { sem o ; }
-
+i := i+1
+until (i == 10);
 if (a < b) then
     print(a);
 	print(a+b)
@@ -78,3 +92,18 @@ endif
 end.
 
 
+outro
+begin
+var a, b, c, d: int;
+a := 40;
+b := 20;
+c := 20;
+d := 30;
+c := a+b%2;
+if (a > b) then
+    print("a maior que b e c menor que d");
+    print ("media = ", c)
+else
+    print("FRACASSADO")
+    endif
+end.
