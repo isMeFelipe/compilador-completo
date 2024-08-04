@@ -1,7 +1,12 @@
+class VariableNotDeclaredError(Exception):
+    def __init__(self, var_name):
+        self.var_name = var_name
+        super().__init__(f"***ERRO NA COMPILAÇÃO***\nDetalhes: Variável não declarada: {var_name}")
+
 class VariableAlreadyDeclaredError(Exception):
     def __init__(self, var_name):
         self.var_name = var_name
-        super().__init__(f"Variável já declarada: {var_name}")
+        super().__init__(f"***ERRO NA COMPILAÇÃO***\nDetalhes: Variável já declarada: {var_name}")
 
 class SymbolTable:
     def __init__(self):
@@ -63,7 +68,10 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return ""
 
     def visitAssignment(self, ctx: SimpAlgParser.AssignmentContext):
-        return f"{ctx.IDENTIFIER().getText()} = {self.visit(ctx.expression())};"
+        var_name = ctx.IDENTIFIER().getText()
+        if not self.symbol_table.is_declared(var_name):
+            raise VariableNotDeclaredError(var_name)
+        return f"{var_name} = {self.visit(ctx.expression())};"
 
     def visitIo_statement(self, ctx: SimpAlgParser.Io_statementContext):
         values = " << ".join([self.visit(v) for v in ctx.value_list().value()])
