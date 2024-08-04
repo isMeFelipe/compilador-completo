@@ -2,9 +2,12 @@
 using namespace std;
 
 int main() {
-int i;
-int i2;
-i2 = 1;
+int a, i;
+float b, c;
+a = 40;
+c = 11.5;
+b = c + (float)a;
+i = 1;
 L1:
 cout << i;
 i = i + 1;
@@ -12,6 +15,17 @@ i = i + 1;
 if (((i == 10))) goto L2;
 goto L1;
 L2:
+
+if (!(((float)a < b))) goto L3;
+cout << a;
+cout << (float)a + b;
+
+goto L4;
+L3:
+cout << b - (float)a;
+cout << b;
+
+L4:
 
 
 return 0;

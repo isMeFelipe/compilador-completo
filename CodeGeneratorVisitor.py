@@ -1,35 +1,59 @@
-class VariableNotDeclaredError(Exception):
-    def __init__(self, var_name):
-        self.var_name = var_name
-        super().__init__(f"***ERRO NA COMPILAÇÃO***\nDetalhes: Variável não declarada: {var_name}")
+from SimpAlgVisitor import SimpAlgVisitor
+from SimpAlgParser import SimpAlgParser
 
 class VariableAlreadyDeclaredError(Exception):
     def __init__(self, var_name):
-        self.var_name = var_name
-        super().__init__(f"***ERRO NA COMPILAÇÃO***\nDetalhes: Variável já declarada: {var_name}")
+        super().__init__(f"Variável já declarada: {var_name}")
+
+class VariableNotDeclaredError(Exception):
+    def __init__(self, var_name):
+        super().__init__(f"Variável não declarada: {var_name}")
+
+class VariableNotInitializedError(Exception):
+    def __init__(self, var_name):
+        super().__init__(f"Variável não inicializada: {var_name}")
+
+class TypeError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+class InvalidOperationError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
 
 class SymbolTable:
     def __init__(self):
-        self.symbols = set()  # Armazena variáveis declaradas
+        self.symbols = {}  # Armazena variáveis declaradas e seus tipos
+        self.initialized = set()  # Armazena variáveis inicializadas
 
-    def add_variable(self, var_name):
-        if self.is_declared(var_name):
+    def add_variable(self, var_name, var_type):
+        if var_name in self.symbols:
             raise VariableAlreadyDeclaredError(var_name)
-        self.symbols.add(var_name)
+        self.symbols[var_name] = var_type
 
     def is_declared(self, var_name):
         return var_name in self.symbols
 
-    def __str__(self):
-        return ', '.join(self.symbols)
+    def is_initialized(self, var_name):
+        return var_name in self.initialized
 
-from SimpAlgVisitor import SimpAlgVisitor
-from SimpAlgParser import SimpAlgParser
+    def initialize_variable(self, var_name):
+        if self.is_declared(var_name):
+            self.initialized.add(var_name)
+        else:
+            raise VariableNotDeclaredError(var_name)
+
+    def get_type(self, var_name):
+        return self.symbols.get(var_name, None)
+
+    def __str__(self):
+        return ', '.join([f"{name}: {typ}" for name, typ in self.symbols.items()])
+
 
 class CodeGeneratorVisitor(SimpAlgVisitor):
     def __init__(self):
         self.label_count = 0
-        self.symbol_table = SymbolTable()
+        self.symbol_table = SymbolTable()  # Inicializa a tabela de símbolos
 
     def get_new_label(self):
         self.label_count += 1
@@ -49,36 +73,48 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return code
 
     def visitDeclaration(self, ctx: SimpAlgParser.DeclarationContext):
-        variables = ctx.variable_list().IDENTIFIER()
-        declarations = []
-        
-        for var in variables:
+        var_type = ctx.t_type().getText()  # Obtém o tipo da variável (int ou float)
+        for var in ctx.variable_list().IDENTIFIER():
             var_name = var.getText()
             try:
-                # Adiciona a variável à tabela de símbolos
-                self.symbol_table.add_variable(var_name)
-                # Adiciona a declaração do tipo à lista de declarações
-                declarations.append(var_name)
+                self.symbol_table.add_variable(var_name, var_type)
             except VariableAlreadyDeclaredError as e:
-                print(e)  # Exibe a exceção de variável já declarada, pode-se substituir por logging
-
-        # Gera o código de declaração para as variáveis não declaradas
-        if declarations:
-            return f"int {', '.join(declarations)};"
-        return ""
+                raise e
+        return f"{var_type} {', '.join([var.getText() for var in ctx.variable_list().IDENTIFIER()])};"
 
     def visitAssignment(self, ctx: SimpAlgParser.AssignmentContext):
         var_name = ctx.IDENTIFIER().getText()
         if not self.symbol_table.is_declared(var_name):
             raise VariableNotDeclaredError(var_name)
-        return f"{var_name} = {self.visit(ctx.expression())};"
+        
+        # Marcar variável como inicializada
+        self.symbol_table.initialize_variable(var_name)
+
+        expression_code, expression_type = self.visit(ctx.expression())
+        var_type = self.symbol_table.get_type(var_name)
+
+        if var_type == 'int' and expression_type == 'float':
+            raise TypeError(f"Erro de tipo: Não é possível atribuir um valor decimal a uma variável do tipo 'int'.")
+
+        if var_type != expression_type:
+            if var_type == 'int' and expression_type == 'float':
+                expression_code = f"(int){expression_code}"
+            elif var_type == 'float' and expression_type == 'int':
+                expression_code = f"(float){expression_code}"
+        
+        return f"{var_name} = {expression_code};"
 
     def visitIo_statement(self, ctx: SimpAlgParser.Io_statementContext):
-        values = " << ".join([self.visit(v) for v in ctx.value_list().value()])
+        values = [self.visit(v)[0] for v in ctx.value_list().value()]
         if ctx.READ():
-            return f"cin >> {values};"
+            # Verificar se todas as variáveis estão declaradas
+            for value in values:
+                if isinstance(value, str) and value.isidentifier():
+                    if not self.symbol_table.is_declared(value):
+                        raise VariableNotDeclaredError(value)
+            return f"cin >> {', '.join(values)};"
         else:
-            return f"cout << {values};"
+            return f"cout << {', '.join(values)};"
 
     def visitIf_statement(self, ctx: SimpAlgParser.If_statementContext):
         condition = self.visit(ctx.boolean_expression())
@@ -122,35 +158,84 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return f"{label}:"
 
     def visitExpression(self, ctx: SimpAlgParser.ExpressionContext):
-        left = self.visit(ctx.term(0))
+        left_code, left_type = self.visit(ctx.term(0))
         if ctx.term(1):
             op = ctx.getChild(1).getText()
-            right = self.visit(ctx.term(1))
-            return f"{left} {op} {right}"
-        return left
+            right_code, right_type = self.visit(ctx.term(1))
+
+            # Verificação para a operação de módulo
+            if op == "%" and (left_type == 'float' or right_type == 'float'):
+                raise InvalidOperationError("Não é possível realizar a operação de módulo com variáveis do tipo 'float'.")
+
+            # Verificar se variáveis foram inicializadas
+            if not (left_type == 'int' or left_type == 'float'):
+                raise VariableNotInitializedError("Uma ou mais variáveis usadas na expressão não foram inicializadas.")
+
+            # Conversão de tipos
+            if left_type != right_type:
+                if left_type == 'int' and right_type == 'float':
+                    left_code = f"(float){left_code}"
+                elif left_type == 'float' and right_type == 'int':
+                    right_code = f"(float){right_code}"
+                expr_type = 'float'
+            else:
+                expr_type = left_type
+            
+            return f"{left_code} {op} {right_code}", expr_type
+        
+        return left_code, left_type
 
     def visitTerm(self, ctx: SimpAlgParser.TermContext):
-        left = self.visit(ctx.factor(0))
+        left_code, left_type = self.visit(ctx.factor(0))
         if ctx.factor(1):
             op = ctx.getChild(1).getText()
-            right = self.visit(ctx.factor(1))
-            return f"{left} {op} {right}"
-        return left
+            right_code, right_type = self.visit(ctx.factor(1))
+
+            # Verificação para a operação de módulo
+            if op == "%" and (left_type == 'float' or right_type == 'float'):
+                raise InvalidOperationError("Não é possível realizar a operação de módulo com variáveis do tipo 'float'.")
+
+            # Verificar se variáveis foram inicializadas
+            if not (left_type == 'int' or left_type == 'float'):
+                raise VariableNotInitializedError("Uma ou mais variáveis usadas na expressão não foram inicializadas.")
+
+            # Conversão de tipos
+            if left_type != right_type:
+                if left_type == 'int' and right_type == 'float':
+                    left_code = f"(float){left_code}"
+                elif left_type == 'float' and right_type == 'int':
+                    right_code = f"(float){right_code}"
+                expr_type = 'float'
+            else:
+                expr_type = left_type
+
+            return f"{left_code} {op} {right_code}", expr_type
+        
+        return left_code, left_type
 
     def visitFactor(self, ctx: SimpAlgParser.FactorContext):
         if ctx.primary():
             return self.visit(ctx.primary())
         if ctx.ADD() or ctx.SUB():
-            return f"{ctx.getChild(0).getText()}{self.visit(ctx.primary())}"
+            code, typ = self.visit(ctx.primary())
+            return f"{ctx.getChild(0).getText()}{code}", typ
         return self.visit(ctx.primary())
 
     def visitPrimary(self, ctx: SimpAlgParser.PrimaryContext):
         if ctx.NUMBER():
-            return ctx.NUMBER().getText()
+            number = ctx.NUMBER().getText()
+            if '.' in number:
+                return number, 'float'
+            return number, 'int'
         if ctx.IDENTIFIER():
-            return ctx.IDENTIFIER().getText()
+            var_name = ctx.IDENTIFIER().getText()
+            if not self.symbol_table.is_declared(var_name):
+                raise VariableNotDeclaredError(var_name)
+            if not self.symbol_table.is_initialized(var_name):
+                raise VariableNotInitializedError(var_name)
+            return var_name, self.symbol_table.get_type(var_name)
         if ctx.LPAREN():
-            return f"({self.visit(ctx.expression())})"
+            return f"({self.visit(ctx.expression())})", self.visit(ctx.expression())[1]
         return ""
 
     def visitBoolean_expression(self, ctx: SimpAlgParser.Boolean_expressionContext):
@@ -172,11 +257,17 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
             return "false"
         if ctx.expression():
             op = ctx.getChild(1).getText()
-            left = self.visit(ctx.expression(0))
-            right = self.visit(ctx.expression(1))
-            return f"({left} {op} {right})"
+            left_code, left_type = self.visit(ctx.expression(0))
+            right_code, right_type = self.visit(ctx.expression(1))
+            # Conversão de tipos
+            if left_type != right_type:
+                if left_type == 'int' and right_type == 'float':
+                    left_code = f"(float){left_code}"
+                elif left_type == 'float' and right_type == 'int':
+                    right_code = f"(float){right_code}"
+            return f"({left_code} {op} {right_code})"
         return self.visit(ctx.boolean_expression())
-    
+
 def main():
     from antlr4 import FileStream, CommonTokenStream
     from SimpAlgLexer import SimpAlgLexer
@@ -190,10 +281,12 @@ def main():
     tree = parser.program()
 
     generator = CodeGeneratorVisitor()
-    cpp_code = generator.visit(tree)
-
-    with open('output.cpp', 'w') as f:
-        f.write(cpp_code)
+    try:
+        cpp_code = generator.visit(tree)
+        with open('output.cpp', 'w') as f:
+            f.write(cpp_code)
+    except (TypeError, InvalidOperationError, VariableNotInitializedError) as e:
+        print(f"Erro: {e}")
 
 if __name__ == '__main__':
     main()
