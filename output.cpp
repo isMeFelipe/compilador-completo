@@ -8,22 +8,23 @@ a = 40;
 c = 11.5;
 b = c + (float)a;
 i = 1;
+cout<< "teste" << a << endl;
 L1:
-cout << i;
+cout<< i << endl;
 i = i + 1;
 
-if (((i == 10))) goto L2;
+if (i == 10) goto L2;
 goto L1;
 L2:
 
 if (!(((float)a < b))) goto L3;
-cout << a;
-cout << (float)a + b;
+cout<< a << endl;
+cout<< (float)a + b << endl;
 
 goto L4;
 L3:
-cout << b - (float)a;
-cout << b;
+cout<< b - (float)a << endl;
+cout<< b << endl;
 
 L4:
 

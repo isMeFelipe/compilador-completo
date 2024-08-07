@@ -5,13 +5,14 @@ a := 40;
 c := 11.5;
 b := c + a;
 i := 1;
+print("teste", a);
 repeat
 print(i);
 i := i+1
 until (i == 10);
 if (a < b) then
     print(a);
-	print(a+b) { a, b, c}
+	print(a+b)
 else
     print(b-a);
     print(b)

@@ -105,16 +105,30 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return f"{var_name} = {expression_code};"
 
     def visitIo_statement(self, ctx: SimpAlgParser.Io_statementContext):
-        values = [self.visit(v)[0] for v in ctx.value_list().value()]
         if ctx.READ():
-            # Verificar se todas as variáveis estão declaradas
+            variables = [v.getText() for v in ctx.value_list().value()]
+            for var in variables:
+                if not self.symbol_table.is_declared(var):
+                    raise VariableNotDeclaredError(var)
+                if not self.symbol_table.is_initialized(var):
+                    self.symbol_table.initialize_variable(var)
+            return f"cin >> {', '.join(variables)};"
+        elif ctx.WRITE():
+            values = []
+            for value in ctx.value_list().value():
+                visit_result = self.visit(value)
+                if visit_result is None:
+                    raise ValueError(f"Unexpected None value when visiting: {value.getText()}")
+                values.append(visit_result[0])
+            
+            output_parts = []
             for value in values:
-                if isinstance(value, str) and value.isidentifier():
-                    if not self.symbol_table.is_declared(value):
-                        raise VariableNotDeclaredError(value)
-            return f"cin >> {', '.join(values)};"
-        else:
-            return f"cout << {', '.join(values)};"
+                if value.startswith('"') and value.endswith('"'):
+                    output_parts.append('<< ' + value)
+                else:
+                    output_parts.append(f"<< {value}")
+            return 'cout' + ' '.join(output_parts) + ' << endl;'
+
 
     def visitIf_statement(self, ctx: SimpAlgParser.If_statementContext):
         condition = self.visit(ctx.boolean_expression())
@@ -142,7 +156,7 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
 
         code = f"{start_label}:\n"
         code += f"{body}\n"
-        code += f"if (({condition})) goto {end_label};\n"
+        code += f"if {condition} goto {end_label};\n"
         code += f"goto {start_label};\n"
         code += f"{end_label}:\n"
 
@@ -236,7 +250,15 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
             return var_name, self.symbol_table.get_type(var_name)
         if ctx.LPAREN():
             return f"({self.visit(ctx.expression())})", self.visit(ctx.expression())[1]
+        if ctx.STRING():
+            return ctx.STRING().getText(), 'string'
         return ""
+    
+    def visitValue(self, ctx: SimpAlgParser.ValueContext):
+        if ctx.STRING():
+            return ctx.STRING().getText(), 'string'
+        return self.visitChildren(ctx)
+
 
     def visitBoolean_expression(self, ctx: SimpAlgParser.Boolean_expressionContext):
         terms = [self.visit(bt) for bt in ctx.boolean_term()]

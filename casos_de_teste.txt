@@ -78,6 +78,7 @@ a := 40;
 c := 11.5;
 b := c + a;
 i := 1;
+print("teste", a);
 repeat
 print(i);
 i := i+1
