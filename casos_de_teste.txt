@@ -1,8 +1,3 @@
-Compatibilidade de tipos:
-o não permitir operação % com números reais
-o fazer conversão de inteiro para real, se um dos operandos for real
-
-
 // Looping
 
 begin
@@ -70,7 +65,7 @@ c:= a+b;
 print(c);
 end.
 
-// geral (pega na minha pomba)
+// geral
 begin
 var a, i: int;
 var b, c: float;
@@ -105,6 +100,6 @@ if (a > b) then
     print("a maior que b e c menor que d");
     print ("media = ", c)
 else
-    print("FRACASSADO")
+    print("TIREI 10")
     endif
 end.

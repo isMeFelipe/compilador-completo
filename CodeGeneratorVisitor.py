@@ -1,5 +1,8 @@
 from SimpAlgVisitor import SimpAlgVisitor
 from SimpAlgParser import SimpAlgParser
+import argparse
+from antlr4 import FileStream, CommonTokenStream
+from SimpAlgLexer import SimpAlgLexer
 
 class VariableAlreadyDeclaredError(Exception):
     def __init__(self, var_name):
@@ -291,24 +294,23 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return self.visit(ctx.boolean_expression())
 
 def main():
-    from antlr4 import FileStream, CommonTokenStream
-    from SimpAlgLexer import SimpAlgLexer
-    from SimpAlgParser import SimpAlgParser
+    parser = argparse.ArgumentParser(description="Gerador de código em C++ a partir de código SimpAlg.")
+    parser.add_argument("input_file", help="Caminho para o arquivo de entrada contendo o código SimpAlg.")
+    parser.add_argument("output_file", help="Caminho para o arquivo de saída para armazenar o código C++ gerado.")
+    
+    args = parser.parse_args()
 
-    input_file = './input.txt'
-    input_stream = FileStream(input_file)
+    input_stream = FileStream(args.input_file)
     lexer = SimpAlgLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
     parser = SimpAlgParser(token_stream)
     tree = parser.program()
 
-    generator = CodeGeneratorVisitor()
-    try:
-        cpp_code = generator.visit(tree)
-        with open('output.cpp', 'w') as f:
-            f.write(cpp_code)
-    except (TypeError, InvalidOperationError, VariableNotInitializedError) as e:
-        print(f"Erro: {e}")
+    visitor = CodeGeneratorVisitor()
+    cpp_code = visitor.visit(tree)
 
-if __name__ == '__main__':
+    with open(args.output_file, 'w') as output_file:
+        output_file.write(cpp_code)
+
+if __name__ == "__main__":
     main()

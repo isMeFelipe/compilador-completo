@@ -2,7 +2,7 @@ begin
 var a, i: int;
 var b, c: float;
 a := 40;
-c := 11.5;
+c := 15.5;
 b := c + a;
 i := 1;
 print("teste", a);

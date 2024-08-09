@@ -5,7 +5,7 @@ int main() {
 int a, i;
 float b, c;
 a = 40;
-c = 11.5;
+c = 15.5;
 b = c + (float)a;
 i = 1;
 cout<< "teste" << a << endl;
