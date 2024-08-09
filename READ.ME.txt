@@ -1,0 +1,15 @@
+-- Membros:
+LUIS FELIPE DO NASCIMENTO MOURA
+GUILHERME TORRES
+ENZO BORGES
+
+-- como executar:
+
+python .\CodeGeneratorVisitor.py .\input.txt .\output.cpp
+
+sendo:
+ input.txt o arquivo de entrada
+ output.cpp o arquivo executável em c++
+
+-- Link do repositório:
+https://github.com/isMeFelipe/compilador-completo
