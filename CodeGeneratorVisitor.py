@@ -294,6 +294,8 @@ class CodeGeneratorVisitor(SimpAlgVisitor):
         return self.visit(ctx.boolean_expression())
 
 def main():
+    # comando para executar
+    # > python .\CodeGeneratorVisitor.py .\input.txt .\output.cpp
     parser = argparse.ArgumentParser(description="Gerador de código em C++ a partir de código SimpAlg.")
     parser.add_argument("input_file", help="Caminho para o arquivo de entrada contendo o código SimpAlg.")
     parser.add_argument("output_file", help="Caminho para o arquivo de saída para armazenar o código C++ gerado.")
